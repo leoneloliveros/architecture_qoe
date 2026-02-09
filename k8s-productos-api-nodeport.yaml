@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: productos-api
+  namespace: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: productos-api
+  template:
+    metadata:
+      labels:
+        app: productos-api
+    spec:
+      nodeSelector:
+        node-role: api
+      containers:
+        - name: productos-api
+          image: <TU_REGISTRY>/productos-api:1.1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: productos-api-secrets
+          readinessProbe:
+            httpGet:
+              path: /docs
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /docs
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: productos-api
+  namespace: api
+spec:
+  type: NodePort
+  selector:
+    app: productos-api
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      nodePort: 8090
